@@ -1,8 +1,6 @@
 const { bean, beef } = require('bean-parser')
-const fs = require("fs");
 const beandownLexer = require("./lexer.js");
-const { resolve } = require('path')
-const beandownModel = fs.readFileSync(resolve(__dirname, "beandown.beef"), { encoding: "utf8" });
+const beandownModel = require("./beandown.beef.js")
 
 const helpers = {}
 const model = beef(beandownModel, helpers);
