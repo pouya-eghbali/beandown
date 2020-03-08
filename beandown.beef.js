@@ -1,137 +1,166 @@
-module.exports = `// text
+module.exports = `// aliases
 
-text space => text { raw: left.raw + " " }
-text symbol => text { raw: left.raw + right.raw }
-space symbol => text { raw: " " + right.raw }
-symbol space => text { raw: left.raw + " " }
+alias doubles doubleDash|doubleEqual
+alias styledTexts asteriskText|underscoreText|doubleAsteriskText|doubleUnderscoreText
+alias rawText symbol|space|doubles|code|math
+alias contentText text|styledTexts|link
+alias textual contentText|rawText
+alias lineSymbols dash|plus|sharp
+alias listSymbols asterisk|dash|plus
+alias spaceLists spaceUnorderedList|spaceOrderedList
+alias spaceListSinlge spaceOrderedListItem|spaceUnorderedListItem
+alias listBlockItems spaceLists|lists|textual|line|newline
+alias pipes pipe|pipeSpace|spacePipe|spacePipeSpace
+alias lists orderedList|unorderedList
+alias listsSingle orderedListItem|unorderedListItem
+alias allLists lists|listsSingle|spaceLists|spaceListSinlge
+alias blockRules line|code|table|allLists|image|blockquote|heading
 
+// keywords
 
-// inline code
+multiDash dash => multiDash { count: left.count + 1 }
+doubleDash dash => multiDash { count: 3 }
+dash dash => doubleDash
 
-backtick text|symbol => inline_code_start { code: right.raw }
-inline_code_start text => inline_code_start { code: left.code + right.raw }
-inline_code_start backtick => inline_code { code: left.code }
+multiEqual equal => multiEqual { count: left.count + 1 }
+doubleEqual equal => multiEqual { count: 3 }
+equal equal => doubleEqual
 
-// code block
+asterisk asterisk => doubleAsterisk { raw: '**' }
+underscore underscore => doubleUnderscore { raw: '__' }
 
-backtick backtick => double_backtick
-double_backtick backtick => triple_backtick
+asterisk asteriskEnder => asteriskEnd { raw: '*' }
+doubleAsterisk asteriskEnder => doubleAsteriskEnd { raw: '**' }
+underscore underscoreEnder => underscoreEnd { raw: "_" }
+doubleUnderscore asteriskEnder => doubleUnderscoreEnd { raw: "__" }
 
-text triple_backtick => double_backtick_eliminated
-
-triple_backtick text|symbol|newline => code_block_start { code: right.raw }
-code_block_start text|symbol|newline => code_block_start { code: left.code + right.raw }
-code_block_start triple_backtick => code_block { code: left.code }
-
-// [] delimited
-
-bracket_open text => bracket_start { text: right.raw }
-bracket_start text|symbol|space => bracket_start { text: left.text + right.raw }
-bracket_start bracket_close => bracket { text: left.text }
-
-// () delimited
-
-paren_open text|symbol => paren_start { text: right.raw }
-paren_start text|symbol|space => paren_start { text: left.text + right.raw }
-paren_start paren_close => parentheses { text: left.text }
-
-// link
-
-bracket parentheses => link { title: left.text, link: right.text }
+integer dot => orderedListSymbol { itemNumber: left.raw }
+space orderedListSymbol => spaceOrderedListSymbol { spaces: left.raw, itemNumber: right.itemNumber }
+space listSymbols => spaceListSymbol { spaces: left.raw }
 
 // image
+exclamation link => image { content: right.content }
 
-exclamation bracket => exclamated_bracket { title: right.text }
-exclamated_bracket parentheses => image { title: left.title, link: right.text }
+// link
+bracket parentheses => link { content: { title: left, href: right } }
 
-// double * and _
+// text
 
-asterisk asterisk => double_asterisk
-underscore underscore => double_underscore
+textual textual => text { content: [left, right] }
+textual lineSymbols => text { content: [left, right] }
 
-// * wrapped text
+textual newline => line { content: [left] }
+textual newline => line { content: [left] }
+line text => text { content: [...left.content, right] }
+line line => line { content: [...left.content, ...right.content] }
 
-asterisk text => asterisk_text_start { text: right.raw }
-asterisk_text_start text|symbol|space => asterisk_text_start { text: left.text + right.raw }
-asterisk_text_start asterisk => asterisk_text { text: left.text }
+// wrapped text
 
-// _ wrapped text
+underscore textual => underscoreTextStart { content: [right] }
+underscoreTextStart textual => underscoreTextStart { content: [...left.content, right] }
+underscoreTextStart underscoreEnd => underscoreText { content: [...left.content] }
 
-underscore text => underscore_text_start { text: right.raw }
-underscore_text_start text|space => underscore_text_start { text: left.text + right.raw }
-underscore_text_start underscore => underscore_text { text: left.text }
+asterisk textual => asteriskTextStart { content: [right] }
+asteriskTextStart textual => asteriskTextStart { content: [...left.content, right] }
+asteriskTextStart asteriskEnd => asteriskText { content: [...left.content] }
 
-// ** wrapped text
+doubleAsterisk textual => doubleAsteriskTextStart { content: [right] }
+doubleAsteriskTextStart textual => doubleAsteriskTextStart { content: [...left.content, right] }
+doubleAsteriskTextStart doubleAsteriskEnd => doubleAsteriskText { content: [...left.content] }
 
-double_asterisk text => double_asterisk_text_start { text: right.raw }
-double_asterisk_text_start text|space => double_asterisk_text_start { text: left.text + right.raw }
-double_asterisk_text_start double_asterisk => double_asterisk_text { text: left.text }
-
-// __ wrapped text
-
-double_underscore text => double_underscore_text_start { text: right.raw }
-double_underscore_text_start text|space => double_underscore_text_start { text: left.text + right.raw }
-double_underscore_text_start double_underscore => double_underscore_text { text: left.text }
+doubleUnderscore textual => doubleUnderscoreTextStart { content: [right] }
+doubleUnderscoreTextStart textual => doubleUnderscoreTextStart { content: [...left.content, right] }
+doubleUnderscoreTextStart doubleUnderscoreEnd => doubleUnderscoreText { content: [...left.content] }
 
 // multisharp
 
 multisharp sharp => multisharp { count: left.count + 1 }
 sharp sharp => multisharp { count: 2 }
 
-// not heading
-
-text sharp => text { raw: left.raw + right.raw }
-
 // headings
 
-sharp text => heading_start { level: 1, text: right.raw }
-multisharp text => heading_start { level: left.count, text: right.raw }
-heading_start text => heading_start { level: left.level, text: left.text + right.raw }
-heading_start newline => heading { level: left.level, text: left.text }
-
-// not unordered list
-
-text asterisk => text { raw: left.raw + right.raw }
-
-// unordered list item
-
-asterisk_text_start newline => possible_unordered_list_item { text: left.text }
-possible_unordered_list_item newline => unordered_list_item { text: left.text }
-
-// unordered list
-
-possible_unordered_list_item possible_unordered_list_item => unordered_list { items: [left.text, right.text] }
-possible_unordered_list_item unordered_list_item => unordered_list { items: [left.text, right.text] }
-unordered_list unordered_list => unordered_list { items: [...left.items, ...right.items]}
-unordered_list possible_unordered_list_item => unordered_list { items: [...left.items, right.text]}
-unordered_list unordered_list_item => unordered_list { items: [...left.items, right.text]}
-
-// not blockquote
-
-text greater => text { raw: left.raw + right.raw }
+sharp line => heading { level: 1, content: right }
+multisharp line => heading { level: left.count, content: right }
 
 // blockquote
 
-greater text => blockquote_start { text: right.raw }
-blockquote_start text|symbol => blockquote_start { text: left.text + right.raw }
-blockquote_start newline => blockquote_end { text: left.text }
-blockquote_end text|symbol => blockquote_start { text: left.text + ' ' + right.raw }
-blockquote_end newline => blockquote { text: left.text }
+angleRight line => blockquote { content: right.content }
+blockquote blockquote => blockquote { content: [...left.content, ...right.content] }
 
-asterisk_text|double_asterisk_text|underscore_text|double_underscore_text newline => block { content: [left] }
-text|number|symbol|space newline => block { content: [left] }
-blockquote|heading|code_block|inline_code newline => block { content: [left] }
-unordered_list|unordered_list_item newline => block { content: [left] }
-link|image newline => block { content: [left] }
+// tables
 
-//inline elements
+space pipeSpace => spacePipeSpace { raw: left.raw + right.raw }
+pipe space => pipeSpace { raw: left.raw + right.raw }
+space pipe => spacePipe { raw: left.raw + right.raw }
 
-link|image|text|space|symbol|greater|inline_code block => block { content: [left, ...right.content]}
+pipes multiDash => subHeaderCell {}
+multiDash pipes => subHeaderCell {}
+subHeaderRow pipes => subHeaderRow { cells: left.cells }
+subHeaderRow subHeaderCell => subHeaderRow { cells: [left.cells, right] }
+subHeaderCell subHeaderCell => subHeaderRow { cells: [left, right] }
+
+pipes textual => tableCell { content: right }
+textual pipes => tableCell { content: left }
+tableCell pipes => tableCell { content: left.content }
+tableRow tableCell => tableRow { cells: [left.cells, right], type: "td" }
+tableCell tableCell => tableRow { cells: [left, right], type: "td" }
+
+tableRow newline => tableRowLine { row: left }
+subHeaderRow newline => subheaderRowLine { row: left }
+
+table tableRowLine => table { header: left.header, rows: [...left.rows, right.row] }
+tableRowLine subheaderRowLine => table { header: { ...left, row: { ...left.row, type: "th" } }, rows: [] }
+
+// listBlock
+
+line indent => listBlockStart { content: [left]}
+
+// space lists
+
+spaceListSymbol line|listBlock => spaceUnorderedListItem { content: right }
+spaceOrderedListSymbol line|listBlock => spaceOrderedListItem { content: right }
+
+spaceOrderedListItem spaceOrderedList => spaceOrderedList { content: [left, ...right.content]}
+spaceOrderedList spaceOrderedListItem => spaceOrderedList { content: [...left.content, right]}
+spaceOrderedListItem spaceOrderedListItem => spaceOrderedList { content: [left, right]}
+
+spaceUnorderedListItem spaceUnorderedList => spaceUnorderedList { content: [left, ...right.content]}
+spaceUnorderedList spaceUnorderedListItem => spaceUnorderedList { content: [...left.content, right]}
+spaceUnorderedListItem spaceUnorderedListItem => spaceUnorderedList { content: [left, right]}
+
+// lists
+
+listSymbols line|listBlock => unorderedListItem { content: right }
+orderedListSymbol line|listBlock => orderedListItem { content: right }
+
+orderedListItem orderedList => orderedList { content: [left, ...right.content]}
+orderedList orderedListItem => orderedList { content: [...left.content, right]}
+orderedListItem orderedListItem => orderedList { content: [left, right]}
+
+unorderedListItem unorderedList => unorderedList { content: [left, ...right.content]}
+unorderedList unorderedListItem => unorderedList { content: [...left.content, right]}
+unorderedListItem unorderedListItem => unorderedList { content: [left, right]}
+
+// listBlock
+
+indent listBlockItems => listBlockStart { content: [right]}
+listBlockStart listBlockItems => listBlockStart { content: [...left.content, right]}
+listBlockStart dedent => listBlock { content: left.content }
+
+// blocks
+
+block newline => block { content: left.content }
+blockRules newline => block { content: [left] }
 
 // this should finish the parsing process
 document eof => beandown { blocks: left.blocks }
 
 // document
 
-document block|blockquote|heading|newline => document { blocks: [...left.blocks, right]}
-block|blockquote|heading|newline block|blockquote|heading|newline => document { blocks: [left, right]}`
+document block => document { blocks: [...left.blocks, right]}
+document blockRules => document { blocks: [ ...left.blocks, { name:"block", content: [right] } ] }
+block block => document { blocks: [left, right]}
+block blockRules => document { blocks: [left, { name:"block", content: [right] }]}
+blockRules block => document { blocks: [{ name:"block", content: [left] }, right]}
+
+block eof => beandown { blocks: [left] }`

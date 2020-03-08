@@ -1,22 +1,24 @@
 const patterns = {
+  code: /^(`+)((?:(?!\1).|[\r\n])+)\1/,
+  parentheses: /^\(([^)]|\\.)+\)/,
+  bracket: /^\[([^\]]|\\.)+\]/,
+  math: /^\$([^$]|\\.)+\$/,
   underscore: /^_/,
   asterisk: /^\*/,
+  tilde: /^~/,
   sharp: /^#/,
-  bracket_open: /^\[/,
-  bracket_close: /^\]/,
-  paren_open: /^\(/,
-  paren_close: /^\)/,
   exclamation: /^!/,
-  greater: /^>/,
+  angleRight: /^>/,
   integer: /^\d+/,
   dot: /^\./,
+  pipe: /^\|/,
   dash: /^-/,
+  plus: /^\+/,
   equal: /^=/,
   colon: /^:/,
-  backtick: /^`/,
-  symbol: /^[^ \r\n`\[\]\(\)]+/i,
+  symbol: /^[^ \r\n`\[\]\(\)*_]+/i,
   newline: /^\r?\n/,
-  space: /^ +/,
+  space: /^ +/
 };
 
 module.exports = patterns;
